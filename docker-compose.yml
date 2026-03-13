@@ -5,7 +5,7 @@ services:
     container_name: prove-copilot
     restart: unless-stopped
     ports:
-      - "9999:3000"
+      - "6666:3000"
     environment:
       - NODE_ENV=production
       - DATABASE_URL=/app/data/app.db
