@@ -4,10 +4,11 @@ import { alias } from 'drizzle-orm/sqlite-core'
 import { db } from '../db/index'
 import { tournaments, tournamentParticipations, players, matches } from '../db/schema'
 import { generatePairings, type PairingParticipant } from './pairing.service'
-import { computeScores, rankParticipants, type MatchOutcome } from './scoring.service'
+import { computeScores, rankParticipants, type MatchOutcome, type ParticipantScore } from './scoring.service'
 import { getTournament } from './tournament.service'
 import { sendTournamentResultToDiscord } from '../utils/discord'
 import type { MatchDetail, RoundSummary, TournamentStanding, RoundsAndStandings } from '../../types/domain'
+import { POINTS_PER_WIN } from '../../types/domain'
 
 // Aliased player table for double-join in match queries
 const p1 = alias(players, 'p1')
@@ -115,6 +116,7 @@ export async function listRoundsWithStandings(tournamentId: string): Promise<Rou
       .select({
         playerId: tournamentParticipations.playerId,
         playerName: players.name,
+        pointsEarned: tournamentParticipations.pointsEarned,
         isWinner: tournamentParticipations.isWinner,
       })
       .from(tournamentParticipations)
@@ -125,24 +127,46 @@ export async function listRoundsWithStandings(tournamentId: string): Promise<Rou
   ])
 
   const rounds = groupMatchesByRound(matchRows)
-  const participantIds = participationRows.map(p => p.playerId)
-  const outcomes = buildOutcomes(matchRows)
-  const scores = computeScores(participantIds, outcomes)
-  const ranked = rankParticipants(scores)
-
   const playerNameMap = new Map(participationRows.map(p => [p.playerId, p.playerName]))
   const isWinnerMap = new Map(participationRows.map(p => [p.playerId, p.isWinner]))
 
-  const standings: TournamentStanding[] = ranked.map(r => ({
-    playerId: r.playerId,
-    playerName: playerNameMap.get(r.playerId) ?? 'Unknown',
-    placement: r.placement,
-    points: r.points,
-    wins: r.wins,
-    losses: r.losses,
-    byes: r.byes,
-    isWinner: isWinnerMap.get(r.playerId) ?? false,
-  }))
+  let standings: TournamentStanding[]
+
+  if (tournament.entryMode === 'manual') {
+    // In manual mode there are no matches — build standings directly from stored pointsEarned
+    const participantIds = participationRows.map(p => p.playerId)
+    const manualScores: ParticipantScore[] = participantIds.map((id) => {
+      const row = participationRows.find(p => p.playerId === id)!
+      const wins = Math.floor(row.pointsEarned / POINTS_PER_WIN)
+      return { playerId: id, wins, losses: 0, byes: 0, points: row.pointsEarned }
+    })
+    const ranked = rankParticipants(manualScores)
+    standings = ranked.map(r => ({
+      playerId: r.playerId,
+      playerName: playerNameMap.get(r.playerId) ?? 'Unknown',
+      placement: r.placement,
+      points: r.points,
+      wins: r.wins,
+      losses: r.losses,
+      byes: r.byes,
+      isWinner: isWinnerMap.get(r.playerId) ?? false,
+    }))
+  } else {
+    const participantIds = participationRows.map(p => p.playerId)
+    const outcomes = buildOutcomes(matchRows)
+    const scores = computeScores(participantIds, outcomes)
+    const ranked = rankParticipants(scores)
+    standings = ranked.map(r => ({
+      playerId: r.playerId,
+      playerName: playerNameMap.get(r.playerId) ?? 'Unknown',
+      placement: r.placement,
+      points: r.points,
+      wins: r.wins,
+      losses: r.losses,
+      byes: r.byes,
+      isWinner: isWinnerMap.get(r.playerId) ?? false,
+    }))
+  }
 
   return { rounds, standings, roundCount: tournament.roundCount }
 }

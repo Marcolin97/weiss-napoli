@@ -1,5 +1,5 @@
 import { createError } from 'h3'
-import { eq, asc } from 'drizzle-orm'
+import { eq, asc, isNull } from 'drizzle-orm'
 import { db } from '../db/index'
 import { players } from '../db/schema'
 
@@ -22,7 +22,12 @@ function validateName(value: unknown): string {
 }
 
 export async function listPlayers() {
-  return db.select().from(players).orderBy(asc(players.name)).all()
+  return db
+    .select()
+    .from(players)
+    .where(isNull(players.deletedAt))
+    .orderBy(asc(players.name))
+    .all()
 }
 
 export async function getPlayer(id: string) {
@@ -48,6 +53,19 @@ export async function updatePlayer(id: string, input: UpdatePlayerInput) {
   const [row] = await db
     .update(players)
     .set({ name, updatedAt: new Date() })
+    .where(eq(players.id, id))
+    .returning()
+  return row!
+}
+
+export async function softDeletePlayer(id: string) {
+  const player = await getPlayer(id)
+  if (player.deletedAt) {
+    throw createError({ statusCode: 409, message: 'Player is already deleted' })
+  }
+  const [row] = await db
+    .update(players)
+    .set({ deletedAt: new Date(), updatedAt: new Date() })
     .where(eq(players.id, id))
     .returning()
   return row!

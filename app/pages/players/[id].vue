@@ -16,6 +16,13 @@
         </div>
       </div>
       <UButton label="Modifica" icon="i-lucide-pencil" variant="soft" @click="openEdit" />
+      <UButton
+        label="Elimina"
+        icon="i-lucide-trash-2"
+        variant="soft"
+        color="error"
+        @click="openDeleteConfirm"
+      />
     </div>
 
     <div class="space-y-6">
@@ -109,6 +116,32 @@
         />
       </template>
     </UModal>
+
+    <!-- Delete confirmation modal -->
+    <UModal v-model:open="isDeleteOpen" title="Elimina giocatore">
+      <template #body>
+        <div class="space-y-4">
+          <UAlert
+            color="error"
+            icon="i-lucide-alert-triangle"
+            title="Attenzione"
+            description="Il giocatore verrà nascosto da tutte le liste e non potrà più essere aggiunto ai tornei. Lo storico dei tornei già disputati verrà mantenuto."
+            variant="soft"
+          />
+          <p class="text-sm">Sei sicuro di voler eliminare <strong>{{ player.name }}</strong>?</p>
+          <div class="flex justify-end gap-2">
+            <UButton label="Annulla" variant="ghost" color="neutral" @click="isDeleteOpen = false" />
+            <UButton
+              label="Elimina"
+              icon="i-lucide-trash-2"
+              color="error"
+              :loading="isDeleting"
+              @click="handleDelete"
+            />
+          </div>
+        </div>
+      </template>
+    </UModal>
   </div>
 
   <div v-else-if="status === 'error'" class="text-center py-16">
@@ -129,8 +162,12 @@ const { data: player, status, refresh } = await useFetch<Player>(`/api/players/$
 const { data: history } = await useFetch<PlayerTournamentHistoryEntry[]>(`/api/players/${id}/history`)
 
 const isEditOpen = ref(false)
+const isDeleteOpen = ref(false)
+const isDeleting = ref(false)
 const headerRef = ref<HTMLElement | null>(null)
 const { fadeIn } = useAnime()
+const router = useRouter()
+const toast = useToast()
 
 onMounted(() => {
   if (headerRef.value) fadeIn(headerRef.value)
@@ -151,6 +188,27 @@ function formatDate(value: Date | string) {
 
 function openEdit() {
   isEditOpen.value = true
+}
+
+function openDeleteConfirm() {
+  isDeleteOpen.value = true
+}
+
+async function handleDelete() {
+  isDeleting.value = true
+  try {
+    await $fetch(`/api/players/${id}`, { method: 'DELETE' })
+    toast.add({ title: 'Giocatore eliminato', icon: 'i-lucide-check-circle', color: 'green' })
+    router.push('/players')
+  }
+  catch (e: unknown) {
+    const message = (e as { data?: { message?: string } })?.data?.message ?? 'Errore durante l\'eliminazione'
+    toast.add({ title: 'Errore', description: message, icon: 'i-lucide-x-circle', color: 'red' })
+  }
+  finally {
+    isDeleting.value = false
+    isDeleteOpen.value = false
+  }
 }
 
 async function onPlayerSaved(updated: Player) {

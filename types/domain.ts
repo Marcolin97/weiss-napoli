@@ -14,6 +14,7 @@ export const POINTS_PER_WIN = 3 as const
 export interface Player {
   id: string
   name: string
+  deletedAt: Date | null
   createdAt: Date
   updatedAt: Date
 }
@@ -30,6 +31,7 @@ export interface ClimaxTriggerType {
   id: string
   name: string
   label: string
+  imageUrl: string | null
 }
 
 export interface Tournament {
@@ -52,6 +54,8 @@ export interface TournamentParticipation {
   playerId: string
   climaxTriggerTypeId: string
   climaxTriggerTypeId2: string | null
+  deckId: string | null
+  deckName: string | null
   pointsEarned: number
   finalPlacement: number | null // null until tournament is finalized
   isWinner: boolean
@@ -99,9 +103,13 @@ export interface ParticipantDetail {
   climaxTriggerTypeId: string
   triggerTypeName: string
   triggerTypeLabel: string
+  triggerTypeImageUrl: string | null
   climaxTriggerTypeId2: string | null
   triggerTypeName2: string | null
   triggerTypeLabel2: string | null
+  triggerTypeImageUrl2: string | null
+  deckId: string | null
+  deckName: string | null
   pointsEarned: number
   finalPlacement: number | null
   isWinner: boolean
@@ -239,4 +247,14 @@ export interface PlayerTournamentHistoryEntry {
   pointsEarned: number
   finalPlacement: number | null
   isWinner: boolean
+}
+
+// ─── External API types ───────────────────────────────────────────────────────
+
+/** One Weiss Schwarz set from the EncoreDecks API */
+export interface EncoreDeckSet {
+  _id: string
+  name: string
+  game: string
+  setcodes: string[]
 }

@@ -37,9 +37,16 @@
           class="flex items-center justify-between py-3 px-1"
         >
           <div class="flex items-center gap-3">
-            <UBadge :label="t.label" color="primary" variant="soft" />
-            <span class="text-xs text-muted font-mono">{{ t.name }}</span>
-          </div>
+              <img
+                v-if="t.imageUrl"
+                :src="t.imageUrl"
+                :alt="t.label"
+                class="w-8 h-8 object-contain rounded border border-default bg-muted/20 shrink-0"
+              />
+              <UIcon v-else name="i-lucide-zap" class="text-muted w-8 h-8 shrink-0 p-1" />
+              <UBadge :label="t.label" color="primary" variant="soft" />
+              <span class="text-xs text-muted font-mono">{{ t.name }}</span>
+            </div>
           <div class="flex items-center gap-1">
             <UButton
               icon="i-lucide-pencil"
@@ -145,7 +152,7 @@ function openEdit(t: ClimaxTriggerType) {
 }
 
 // ── Shared saved handler ──────────────────────────────────────────────────────
-async function onSaved() {
+async function onSaved(_updated?: ClimaxTriggerType) {
   isAddOpen.value = false
   isEditOpen.value = false
   editing.value = null

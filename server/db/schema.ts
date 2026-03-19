@@ -14,6 +14,7 @@ const timestamps = {
 export const players = sqliteTable('players', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
+  deletedAt: integer('deleted_at', { mode: 'timestamp' }),
   ...timestamps,
 })
 
@@ -29,6 +30,7 @@ export const climaxTriggerTypes = sqliteTable('climax_trigger_types', {
   id: text('id').primaryKey(),
   name: text('name').notNull().unique(),
   label: text('label').notNull(),
+  imageUrl: text('image_url'),
 })
 
 export const tournaments = sqliteTable('tournaments', {
@@ -62,6 +64,8 @@ export const tournamentParticipations = sqliteTable(
       .notNull()
       .references(() => climaxTriggerTypes.id),
     climaxTriggerTypeId2: text('climax_trigger_type_id_2').references(() => climaxTriggerTypes.id),
+    deckId: text('deck_id'),
+    deckName: text('deck_name'),
     pointsEarned: integer('points_earned').notNull().default(0),
     finalPlacement: integer('final_placement'), // null until tournament is finalized
     isWinner: integer('is_winner', { mode: 'boolean' }).notNull().default(false),

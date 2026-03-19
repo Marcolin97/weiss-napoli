@@ -104,4 +104,30 @@ export async function initializeDatabase(): Promise<void> {
   } catch {
     // Column already exists — safe to ignore
   }
+
+  // Migration: soft delete for players
+  try {
+    await client.execute(`ALTER TABLE players ADD COLUMN deleted_at INTEGER`)
+  } catch {
+    // Column already exists — safe to ignore
+  }
+
+  // Migration: image URL for climax trigger types
+  try {
+    await client.execute(`ALTER TABLE climax_trigger_types ADD COLUMN image_url TEXT`)
+  } catch {
+    // Column already exists — safe to ignore
+  }
+
+  // Migration: deck fields on tournament participations
+  try {
+    await client.execute(`ALTER TABLE tournament_participations ADD COLUMN deck_id TEXT`)
+  } catch {
+    // Column already exists — safe to ignore
+  }
+  try {
+    await client.execute(`ALTER TABLE tournament_participations ADD COLUMN deck_name TEXT`)
+  } catch {
+    // Column already exists — safe to ignore
+  }
 }

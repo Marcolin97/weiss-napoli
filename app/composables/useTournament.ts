@@ -24,7 +24,7 @@ export function useTournament() {
 
   async function addParticipant(
     tournamentId: string,
-    data: { playerId: string; climaxTriggerTypeId: string; climaxTriggerTypeId2: string },
+    data: { playerId: string; climaxTriggerTypeId: string; climaxTriggerTypeId2: string; deckId?: string | null; deckName?: string | null },
   ): Promise<ParticipantDetail> {
     try {
       const result = await $fetch<ParticipantDetail>(`/api/tournaments/${tournamentId}/participants`, {

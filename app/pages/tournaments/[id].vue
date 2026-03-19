@@ -119,10 +119,11 @@
 
           <UCard>
             <UTable
-              :data="participants ?? []"
+              :data="sortedParticipants"
               :columns="participantColumns"
               :loading="participantsStatus === 'pending'"
               empty="Nessun partecipante. Aggiungi giocatori per iniziare."
+              :ui="{ tr: (row: { original: ParticipantDetail }) => participantRowClass(row.original) }"
             >
               <template #playerName-cell="{ row }">
                 <NuxtLink
@@ -135,20 +136,40 @@
 
               <template #triggerTypeLabel-cell="{ row }">
                 <div class="flex flex-wrap gap-1">
-                  <UBadge
-                    :label="row.original.triggerTypeLabel"
-                    color="neutral"
-                    variant="soft"
-                    size="sm"
-                  />
-                  <UBadge
-                    v-if="row.original.triggerTypeLabel2"
-                    :label="row.original.triggerTypeLabel2"
-                    color="neutral"
-                    variant="soft"
-                    size="sm"
-                  />
+                  <div class="flex items-center gap-1">
+                    <img
+                      v-if="row.original.triggerTypeImageUrl"
+                      :src="row.original.triggerTypeImageUrl"
+                      :alt="row.original.triggerTypeLabel"
+                      class="w-5 h-5 object-contain"
+                    />
+                    <UBadge
+                      :label="row.original.triggerTypeLabel"
+                      color="neutral"
+                      variant="soft"
+                      size="sm"
+                    />
+                  </div>
+                  <div v-if="row.original.triggerTypeLabel2" class="flex items-center gap-1">
+                    <img
+                      v-if="row.original.triggerTypeImageUrl2"
+                      :src="row.original.triggerTypeImageUrl2"
+                      :alt="row.original.triggerTypeLabel2"
+                      class="w-5 h-5 object-contain"
+                    />
+                    <UBadge
+                      :label="row.original.triggerTypeLabel2"
+                      color="neutral"
+                      variant="soft"
+                      size="sm"
+                    />
+                  </div>
                 </div>
+              </template>
+
+              <template #deckName-cell="{ row }">
+                <span v-if="row.original.deckName" class="text-xs text-muted">{{ row.original.deckName }}</span>
+                <span v-else class="text-muted text-xs">—</span>
               </template>
 
               <template #pointsEarned-cell="{ row }">
@@ -159,7 +180,7 @@
                 <UBadge
                   v-if="row.original.finalPlacement"
                   :label="`#${row.original.finalPlacement}`"
-                  :color="row.original.finalPlacement === 1 ? 'yellow' : 'neutral'"
+                  :color="row.original.finalPlacement === 1 ? 'yellow' : row.original.finalPlacement === 2 ? 'neutral' : row.original.finalPlacement === 3 ? 'amber' : 'neutral'"
                   variant="soft"
                   size="sm"
                 />
@@ -538,12 +559,14 @@ onMounted(() => {
   if (headerRef.value) fadeIn(headerRef.value)
 })
 
-// Initialize manualResults when participants load
+// Initialize manualResults when participants load — restore wins from stored pointsEarned
 watch(() => participants.value, (parts) => {
   if (!parts) return
   for (const p of parts) {
-    if (!manualResults.value[p.id]) {
-      manualResults.value[p.id] = { wins: 0, losses: 0 }
+    const storedWins = Math.floor(p.pointsEarned / 3)
+    manualResults.value[p.id] = {
+      wins: storedWins,
+      losses: (tournament.value?.roundCount ?? DEFAULT_ROUND_COUNT) - storedWins,
     }
   }
 }, { immediate: true })
@@ -556,10 +579,29 @@ const tabs = [
 
 // ─── Participant tab ──────────────────────────────────────────────────────────
 
+const sortedParticipants = computed(() => {
+  const parts = participants.value ?? []
+  return [...parts].sort((a, b) => {
+    if (a.finalPlacement === null && b.finalPlacement === null) return 0
+    if (a.finalPlacement === null) return 1
+    if (b.finalPlacement === null) return -1
+    return a.finalPlacement - b.finalPlacement
+  })
+})
+
+function participantRowClass(row: ParticipantDetail): string {
+  const p = row.finalPlacement
+  if (p === 1) return 'bg-yellow-500/10 dark:bg-yellow-500/10'
+  if (p === 2) return 'bg-gray-400/10 dark:bg-gray-400/10'
+  if (p === 3) return 'bg-amber-700/10 dark:bg-amber-700/10'
+  return ''
+}
+
 const participantColumns = computed((): ColumnDef<ParticipantDetail>[] => {
   const cols: ColumnDef<ParticipantDetail>[] = [
     { accessorKey: 'playerName', header: 'Giocatore' },
     { accessorKey: 'triggerTypeLabel', header: 'Trigger' },
+    { accessorKey: 'deckName', header: 'Deck' },
     { accessorKey: 'pointsEarned', header: 'Punti' },
   ]
   if (tournament.value?.status === 'finalized') {

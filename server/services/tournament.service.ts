@@ -18,6 +18,8 @@ export interface AddParticipantInput {
   playerId: string
   climaxTriggerTypeId: string
   climaxTriggerTypeId2: string
+  deckId?: string | null
+  deckName?: string | null
 }
 
 // ─── Validation helpers ───────────────────────────────────────────────────────
@@ -132,9 +134,13 @@ export async function listParticipants(tournamentId: string) {
       climaxTriggerTypeId: tournamentParticipations.climaxTriggerTypeId,
       triggerTypeName: climaxTriggerTypes.name,
       triggerTypeLabel: climaxTriggerTypes.label,
+      triggerTypeImageUrl: climaxTriggerTypes.imageUrl,
       climaxTriggerTypeId2: tournamentParticipations.climaxTriggerTypeId2,
       triggerTypeName2: ct2.name,
       triggerTypeLabel2: ct2.label,
+      triggerTypeImageUrl2: ct2.imageUrl,
+      deckId: tournamentParticipations.deckId,
+      deckName: tournamentParticipations.deckName,
       pointsEarned: tournamentParticipations.pointsEarned,
       finalPlacement: tournamentParticipations.finalPlacement,
       isWinner: tournamentParticipations.isWinner,
@@ -218,6 +224,8 @@ export async function addParticipant(tournamentId: string, input: AddParticipant
       playerId: input.playerId,
       climaxTriggerTypeId: input.climaxTriggerTypeId,
       climaxTriggerTypeId2: input.climaxTriggerTypeId2,
+      deckId: input.deckId ?? null,
+      deckName: input.deckName ?? null,
       pointsEarned: 0,
       isWinner: false,
       wasAbsent: false,
