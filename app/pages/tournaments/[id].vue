@@ -217,6 +217,7 @@
         <UModal v-model:open="isAddParticipantOpen" title="Aggiungi partecipante">
           <template #body>
             <TournamentAddParticipantForm
+              v-if="isAddParticipantOpen"
               :tournament-id="id"
               :all-players="allPlayers ?? []"
               :trigger-types="triggerTypes ?? []"
